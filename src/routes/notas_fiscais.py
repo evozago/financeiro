@@ -306,7 +306,6 @@ def upload_nota_fiscal():
         for item_data in dados_nfe['itens']:
             item = ItemNotaFiscal(
                 nota_fiscal_id=nota_fiscal.id,
-                numero_item=item_data['numero_item'],
                 codigo_produto=item_data['codigo_produto'],
                 descricao=item_data['descricao'],
                 ncm=item_data['ncm'],
