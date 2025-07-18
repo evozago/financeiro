@@ -1,0 +1,9 @@
+Flask==2.3.3
+Flask-CORS==4.0.0
+SQLAlchemy==2.0.21
+psycopg2-binary==2.9.7
+python-dotenv==1.0.0
+Werkzeug==2.3.7
+lxml==4.9.3
+python-dateutil==2.8.2
+
