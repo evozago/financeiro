@@ -294,9 +294,8 @@ def upload_nota_fiscal():
             data_emissao=dados_nfe['data_emissao'],
             valor_total=dados_nfe['valor_total'],
             valor_desconto=dados_nfe['valor_desconto'],
-            valor_liquido=dados_nfe['valor_liquido'],
-            natureza_operacao=dados_nfe['natureza_operacao'],
-            xml_content=xml_content,
+            valor_produtos=dados_nfe['valor_total'] - dados_nfe['valor_desconto'],
+            arquivo_xml=secure_filename(file.filename),
             status='PROCESSADA'
         )
         
