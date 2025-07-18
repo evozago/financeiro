@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão Financeira</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <h1>Sistema Financeiro</h1>
+            </div>
+            <nav class="nav">
+                <button class="nav-btn active" data-section="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </button>
+                <button class="nav-btn" data-section="notas-fiscais">
+                    <i class="fas fa-file-invoice"></i>
+                    Notas Fiscais
+                </button>
+                <button class="nav-btn" data-section="contas-pagar">
+                    <i class="fas fa-money-bill-wave"></i>
+                    Contas a Pagar
+                </button>
+                <button class="nav-btn" data-section="fornecedores">
+                    <i class="fas fa-building"></i>
+                    Fornecedores
+                </button>
+                <button class="nav-btn" data-section="tipos-despesa">
+                    <i class="fas fa-tags"></i>
+                    Tipos de Despesa
+                </button>
+                <button class="nav-btn" data-section="comprovantes">
+                    <i class="fas fa-receipt"></i>
+                    Comprovantes
+                </button>
+                <button class="nav-btn" data-section="conciliacao">
+                    <i class="fas fa-balance-scale"></i>
+                    Conciliação
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section active">
+            <div class="section-header">
+                <h2><i class="fas fa-tachometer-alt"></i> Dashboard Financeiro</h2>
+            </div>
+            
+            <div class="dashboard-cards">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Contas Pendentes</h3>
+                        <i class="fas fa-clock text-warning"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="metric">
+                            <span class="value" id="total-pendente">R$ 0,00</span>
+                            <span class="count" id="count-pendente">0 contas</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Contas Vencidas</h3>
+                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="metric">
+                            <span class="value" id="total-vencido">R$ 0,00</span>
+                            <span class="count" id="count-vencido">0 contas</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Contas Pagas</h3>
+                        <i class="fas fa-check-circle text-success"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="metric">
+                            <span class="value" id="total-pago">R$ 0,00</span>
+                            <span class="count" id="count-pago">0 contas</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dashboard-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Próximos Vencimentos</h3>
+                        <button class="btn btn-sm btn-primary" onclick="atualizarDashboard()">
+                            <i class="fas fa-sync-alt"></i> Atualizar
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Fornecedor</th>
+                                        <th>Descrição</th>
+                                        <th>Vencimento</th>
+                                        <th>Valor</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="proximos-vencimentos">
+                                    <tr>
+                                        <td colspan="5" class="text-center">Carregando...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Notas Fiscais Section -->
+        <section id="notas-fiscais" class="section">
+            <div class="section-header">
+                <h2><i class="fas fa-file-invoice"></i> Notas Fiscais</h2>
+                <button class="btn btn-primary" onclick="abrirModalUploadXML()">
+                    <i class="fas fa-upload"></i> Importar XML
+                </button>
+            </div>
+            
+            <div class="filters">
+                <div class="filter-group">
+                    <input type="text" id="search-notas" placeholder="Buscar por número, chave ou fornecedor..." class="form-control">
+                    <button class="btn btn-secondary" onclick="buscarNotasFiscais()">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Número/Série</th>
+                                    <th>Fornecedor</th>
+                                    <th>Data Emissão</th>
+                                    <th>Valor Total</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-notas-fiscais">
+                                <tr>
+                                    <td colspan="6" class="text-center">Nenhuma nota fiscal encontrada</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="pagination-notas"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contas a Pagar Section -->
+        <section id="contas-pagar" class="section">
+            <div class="section-header">
+                <h2><i class="fas fa-money-bill-wave"></i> Contas a Pagar</h2>
+                <button class="btn btn-primary" onclick="abrirModalContaPagar()">
+                    <i class="fas fa-plus"></i> Nova Conta
+                </button>
+            </div>
+            
+            <div class="filters">
+                <div class="filter-group">
+                    <input type="text" id="search-contas" placeholder="Buscar contas..." class="form-control">
+                    <select id="filter-status" class="form-control">
+                        <option value="">Todos os Status</option>
+                        <option value="PENDENTE">Pendente</option>
+                        <option value="PAGO">Pago</option>
+                        <option value="VENCIDO">Vencido</option>
+                        <option value="CANCELADO">Cancelado</option>
+                    </select>
+                    <select id="filter-fornecedor" class="form-control">
+                        <option value="">Todos os Fornecedores</option>
+                    </select>
+                    <input type="date" id="filter-data-inicio" class="form-control">
+                    <input type="date" id="filter-data-fim" class="form-control">
+                    <button class="btn btn-secondary" onclick="buscarContasPagar()">
+                        <i class="fas fa-search"></i> Filtrar
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Fornecedor</th>
+                                    <th>Descrição</th>
+                                    <th>Tipo</th>
+                                    <th>Vencimento</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-contas-pagar">
+                                <tr>
+                                    <td colspan="7" class="text-center">Nenhuma conta encontrada</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="pagination-contas"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Fornecedores Section -->
+        <section id="fornecedores" class="section">
+            <div class="section-header">
+                <h2><i class="fas fa-building"></i> Fornecedores</h2>
+                <button class="btn btn-primary" onclick="abrirModalFornecedor()">
+                    <i class="fas fa-plus"></i> Novo Fornecedor
+                </button>
+            </div>
+            
+            <div class="filters">
+                <div class="filter-group">
+                    <input type="text" id="search-fornecedores" placeholder="Buscar por nome ou CNPJ..." class="form-control">
+                    <button class="btn btn-secondary" onclick="buscarFornecedores()">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>CNPJ</th>
+                                    <th>Razão Social</th>
+                                    <th>Nome Fantasia</th>
+                                    <th>Cidade/UF</th>
+                                    <th>Telefone</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-fornecedores">
+                                <tr>
+                                    <td colspan="6" class="text-center">Nenhum fornecedor encontrado</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="pagination-fornecedores"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tipos de Despesa Section -->
+        <section id="tipos-despesa" class="section">
+            <div class="section-header">
+                <h2><i class="fas fa-tags"></i> Tipos de Despesa</h2>
+                <button class="btn btn-primary" onclick="abrirModalTipoDespesa()">
+                    <i class="fas fa-plus"></i> Novo Tipo
+                </button>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Descrição</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-tipos-despesa">
+                                <tr>
+                                    <td colspan="4" class="text-center">Carregando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comprovantes Section -->
+        <section id="comprovantes" class="section">
+            <div class="section-header">
+                <h2><i class="fas fa-receipt"></i> Comprovantes de Pagamento</h2>
+                <button class="btn btn-primary" onclick="abrirModalComprovante()">
+                    <i class="fas fa-upload"></i> Enviar Comprovante
+                </button>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Arquivo</th>
+                                    <th>Conta Associada</th>
+                                    <th>Valor Reconhecido</th>
+                                    <th>Data Reconhecida</th>
+                                    <th>Status OCR</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-comprovantes">
+                                <tr>
+                                    <td colspan="6" class="text-center">Nenhum comprovante encontrado</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Conciliação Section -->
+        <section id="conciliacao" class="section">
+            <div class="section-header">
+                <h2><i class="fas fa-balance-scale"></i> Conciliação Bancária</h2>
+                <button class="btn btn-primary" onclick="abrirModalUploadOFX()">
+                    <i class="fas fa-upload"></i> Importar OFX
+                </button>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Descrição</th>
+                                    <th>Valor</th>
+                                    <th>Conta Associada</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-extratos">
+                                <tr>
+                                    <td colspan="6" class="text-center">Nenhum extrato encontrado</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <!-- Modal Upload XML -->
+    <div id="modal-upload-xml" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-upload"></i> Importar Nota Fiscal XML</h3>
+                <button class="modal-close" onclick="fecharModal('modal-upload-xml')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-upload-xml" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="arquivo-xml">Arquivo XML da Nota Fiscal:</label>
+                        <input type="file" id="arquivo-xml" name="file" accept=".xml" required class="form-control">
+                        <small class="form-text">Selecione o arquivo XML da nota fiscal eletrônica</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-upload-xml')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Importar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Conta a Pagar -->
+    <div id="modal-conta-pagar" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus"></i> Nova Conta a Pagar</h3>
+                <button class="modal-close" onclick="fecharModal('modal-conta-pagar')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-conta-pagar">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="conta-fornecedor">Fornecedor:</label>
+                            <select id="conta-fornecedor" name="fornecedor_id" required class="form-control">
+                                <option value="">Selecione um fornecedor</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="conta-tipo-despesa">Tipo de Despesa:</label>
+                            <select id="conta-tipo-despesa" name="tipo_despesa_id" required class="form-control">
+                                <option value="">Selecione um tipo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="conta-descricao">Descrição:</label>
+                        <input type="text" id="conta-descricao" name="descricao" required class="form-control">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="conta-valor">Valor:</label>
+                            <input type="number" id="conta-valor" name="valor_original" step="0.01" required class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="conta-vencimento">Data de Vencimento:</label>
+                            <input type="date" id="conta-vencimento" name="data_vencimento" required class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="conta-documento">Número do Documento:</label>
+                        <input type="text" id="conta-documento" name="numero_documento" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="conta-observacoes">Observações:</label>
+                        <textarea id="conta-observacoes" name="observacoes" rows="3" class="form-control"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-conta-pagar')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Fornecedor -->
+    <div id="modal-fornecedor" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-building"></i> Novo Fornecedor</h3>
+                <button class="modal-close" onclick="fecharModal('modal-fornecedor')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-fornecedor">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fornecedor-cnpj">CNPJ:</label>
+                            <input type="text" id="fornecedor-cnpj" name="cnpj" required class="form-control" maxlength="18">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornecedor-ie">Inscrição Estadual:</label>
+                            <input type="text" id="fornecedor-ie" name="inscricao_estadual" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fornecedor-razao">Razão Social:</label>
+                        <input type="text" id="fornecedor-razao" name="razao_social" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="fornecedor-fantasia">Nome Fantasia:</label>
+                        <input type="text" id="fornecedor-fantasia" name="nome_fantasia" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="fornecedor-endereco">Endereço:</label>
+                        <input type="text" id="fornecedor-endereco" name="endereco" class="form-control">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fornecedor-cidade">Cidade:</label>
+                            <input type="text" id="fornecedor-cidade" name="cidade" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornecedor-uf">UF:</label>
+                            <select id="fornecedor-uf" name="uf" class="form-control">
+                                <option value="">Selecione</option>
+                                <option value="AC">AC</option>
+                                <option value="AL">AL</option>
+                                <option value="AP">AP</option>
+                                <option value="AM">AM</option>
+                                <option value="BA">BA</option>
+                                <option value="CE">CE</option>
+                                <option value="DF">DF</option>
+                                <option value="ES">ES</option>
+                                <option value="GO">GO</option>
+                                <option value="MA">MA</option>
+                                <option value="MT">MT</option>
+                                <option value="MS">MS</option>
+                                <option value="MG">MG</option>
+                                <option value="PA">PA</option>
+                                <option value="PB">PB</option>
+                                <option value="PR">PR</option>
+                                <option value="PE">PE</option>
+                                <option value="PI">PI</option>
+                                <option value="RJ">RJ</option>
+                                <option value="RN">RN</option>
+                                <option value="RS">RS</option>
+                                <option value="RO">RO</option>
+                                <option value="RR">RR</option>
+                                <option value="SC">SC</option>
+                                <option value="SP">SP</option>
+                                <option value="SE">SE</option>
+                                <option value="TO">TO</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="fornecedor-cep">CEP:</label>
+                            <input type="text" id="fornecedor-cep" name="cep" class="form-control" maxlength="9">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fornecedor-telefone">Telefone:</label>
+                            <input type="text" id="fornecedor-telefone" name="telefone" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornecedor-email">E-mail:</label>
+                            <input type="email" id="fornecedor-email" name="email" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-fornecedor')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tipo de Despesa -->
+    <div id="modal-tipo-despesa" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-tags"></i> Novo Tipo de Despesa</h3>
+                <button class="modal-close" onclick="fecharModal('modal-tipo-despesa')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-tipo-despesa">
+                    <div class="form-group">
+                        <label for="tipo-nome">Nome:</label>
+                        <input type="text" id="tipo-nome" name="nome" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="tipo-descricao">Descrição:</label>
+                        <textarea id="tipo-descricao" name="descricao" rows="3" class="form-control"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="tipo-ativo" name="ativo" checked>
+                            Ativo
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-tipo-despesa')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Carregando...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
