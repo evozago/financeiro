@@ -1,4 +1,3 @@
-// Configuração da API
 const API_BASE = '/api';
 
 // Estado da aplicação
@@ -9,14 +8,16 @@ let tiposDespesa = [];
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Inicializando aplicação...');
     initializeApp();
 });
 
 function initializeApp() {
     setupNavigation();
     setupForms();
+    setupEventListeners();
     loadInitialData();
-    atualizarDashboard();
+    showSection('dashboard');
 }
 
 // Navegação
@@ -31,17 +32,21 @@ function setupNavigation() {
 }
 
 function showSection(sectionName) {
+    console.log('Mostrando seção:', sectionName);
+    
     // Atualizar botões de navegação
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
+    const activeBtn = document.querySelector(`[data-section="${sectionName}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
     
     // Mostrar seção
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
     });
-    document.getElementById(sectionName).classList.add('active');
+    const activeSection = document.getElementById(sectionName);
+    if (activeSection) activeSection.classList.add('active');
     
     currentSection = sectionName;
     
@@ -50,6 +55,7 @@ function showSection(sectionName) {
 }
 
 function loadSectionData(section) {
+    console.log('Carregando dados da seção:', section);
     switch(section) {
         case 'dashboard':
             atualizarDashboard();
@@ -66,41 +72,78 @@ function loadSectionData(section) {
         case 'tipos-despesa':
             buscarTiposDespesa();
             break;
+        case 'comprovantes':
+            buscarComprovantes();
+            break;
+        case 'conciliacao':
+            buscarExtratosBancarios();
+            break;
     }
+}
+
+// Event Listeners
+function setupEventListeners() {
+    // Botões de ação
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('.btn-nova-conta, [onclick*="abrirModal"]')) {
+            const modalId = e.target.dataset.modal || 'modal-conta-pagar';
+            abrirModal(modalId);
+        }
+        
+        if (e.target.matches('.btn-importar-xml, [onclick*="importarXML"]')) {
+            abrirModal('modal-upload-xml');
+        }
+        
+        if (e.target.matches('.btn-novo-fornecedor')) {
+            abrirModal('modal-fornecedor');
+        }
+        
+        if (e.target.matches('.btn-novo-tipo')) {
+            abrirModal('modal-tipo-despesa');
+        }
+        
+        if (e.target.matches('.btn-filtrar')) {
+            aplicarFiltros();
+        }
+    });
 }
 
 // Configuração de formulários
 function setupForms() {
     // Form upload XML
-    document.getElementById('form-upload-xml').addEventListener('submit', handleUploadXML);
+    const formXML = document.getElementById('form-upload-xml');
+    if (formXML) {
+        formXML.addEventListener('submit', handleUploadXML);
+    }
     
     // Form conta a pagar
-    document.getElementById('form-conta-pagar').addEventListener('submit', handleSalvarContaPagar);
+    const formConta = document.getElementById('form-conta-pagar');
+    if (formConta) {
+        formConta.addEventListener('submit', handleSalvarContaPagar);
+    }
     
     // Form fornecedor
-    document.getElementById('form-fornecedor').addEventListener('submit', handleSalvarFornecedor);
+    const formFornecedor = document.getElementById('form-fornecedor');
+    if (formFornecedor) {
+        formFornecedor.addEventListener('submit', handleSalvarFornecedor);
+    }
     
     // Form tipo de despesa
-    document.getElementById('form-tipo-despesa').addEventListener('submit', handleSalvarTipoDespesa);
-    
-    // Máscara CNPJ
-    document.getElementById('fornecedor-cnpj').addEventListener('input', function(e) {
-        e.target.value = formatCNPJ(e.target.value);
-    });
-    
-    // Máscara CEP
-    document.getElementById('fornecedor-cep').addEventListener('input', function(e) {
-        e.target.value = formatCEP(e.target.value);
-    });
+    const formTipo = document.getElementById('form-tipo-despesa');
+    if (formTipo) {
+        formTipo.addEventListener('submit', handleSalvarTipoDespesa);
+    }
 }
 
 // Carregamento inicial de dados
 async function loadInitialData() {
+    console.log('Carregando dados iniciais...');
     try {
         await Promise.all([
             carregarFornecedores(),
             carregarTiposDespesa()
         ]);
+        console.log('Dados iniciais carregados com sucesso');
     } catch (error) {
         console.error('Erro ao carregar dados iniciais:', error);
     }
@@ -108,11 +151,13 @@ async function loadInitialData() {
 
 async function carregarFornecedores() {
     try {
+        console.log('Carregando fornecedores...');
         const response = await fetch(`${API_BASE}/fornecedores`);
         const data = await response.json();
         
         if (data.success) {
             fornecedores = data.data;
+            console.log('Fornecedores carregados:', fornecedores.length);
             populateSelect('conta-fornecedor', fornecedores, 'id', 'razao_social');
             populateSelect('filter-fornecedor', fornecedores, 'id', 'razao_social');
         }
@@ -123,11 +168,13 @@ async function carregarFornecedores() {
 
 async function carregarTiposDespesa() {
     try {
+        console.log('Carregando tipos de despesa...');
         const response = await fetch(`${API_BASE}/tipos-despesa`);
         const data = await response.json();
         
         if (data.success) {
             tiposDespesa = data.data;
+            console.log('Tipos de despesa carregados:', tiposDespesa.length);
             populateSelect('conta-tipo-despesa', tiposDespesa, 'id', 'nome');
         }
     } catch (error) {
@@ -156,6 +203,7 @@ function populateSelect(selectId, items, valueField, textField) {
 
 // Dashboard
 async function atualizarDashboard() {
+    console.log('Atualizando dashboard...');
     showLoading();
     try {
         const response = await fetch(`${API_BASE}/contas-pagar/dashboard`);
@@ -163,35 +211,38 @@ async function atualizarDashboard() {
         
         if (data.success) {
             const dashboard = data.data;
+            console.log('Dashboard carregado:', dashboard);
             
             // Atualizar cards
-            document.getElementById('total-pendente').textContent = formatCurrency(dashboard.totais.pendente);
-            document.getElementById('count-pendente').textContent = `${dashboard.contadores.pendente} contas`;
+            updateElement('total-pendente', formatCurrency(dashboard.totais.pendente));
+            updateElement('count-pendente', `${dashboard.contadores.pendente} contas`);
             
-            document.getElementById('total-vencido').textContent = formatCurrency(dashboard.totais.vencido);
-            document.getElementById('count-vencido').textContent = `${dashboard.contadores.vencido} contas`;
+            updateElement('total-vencido', formatCurrency(dashboard.totais.vencido));
+            updateElement('count-vencido', `${dashboard.contadores.vencido} contas`);
             
-            document.getElementById('total-pago').textContent = formatCurrency(dashboard.totais.pago);
-            document.getElementById('count-pago').textContent = `${dashboard.contadores.pago} contas`;
+            updateElement('total-pago', formatCurrency(dashboard.totais.pago));
+            updateElement('count-pago', `${dashboard.contadores.pago} contas`);
             
             // Atualizar próximos vencimentos
             const tbody = document.getElementById('proximos-vencimentos');
-            tbody.innerHTML = '';
-            
-            if (dashboard.proximos_vencimentos.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nenhum vencimento próximo</td></tr>';
-            } else {
-                dashboard.proximos_vencimentos.forEach(conta => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${conta.fornecedor?.razao_social || 'N/A'}</td>
-                        <td>${conta.descricao}</td>
-                        <td>${formatDate(conta.data_vencimento)}</td>
-                        <td>${formatCurrency(conta.valor_original)}</td>
-                        <td><span class="status-badge status-${conta.status.toLowerCase()}">${conta.status}</span></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+            if (tbody) {
+                tbody.innerHTML = '';
+                
+                if (dashboard.proximos_vencimentos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nenhum vencimento próximo</td></tr>';
+                } else {
+                    dashboard.proximos_vencimentos.forEach(conta => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${conta.fornecedor?.razao_social || 'N/A'}</td>
+                            <td>${conta.descricao}</td>
+                            <td>${formatDate(conta.data_vencimento)}</td>
+                            <td>${formatCurrency(conta.valor_original)}</td>
+                            <td><span class="status-badge status-${conta.status.toLowerCase()}">${conta.status}</span></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
             }
         }
     } catch (error) {
@@ -202,111 +253,16 @@ async function atualizarDashboard() {
     }
 }
 
-// Notas Fiscais
-async function buscarNotasFiscais(page = 1) {
-    showLoading();
-    try {
-        const search = document.getElementById('search-notas')?.value || '';
-        const params = new URLSearchParams({
-            page: page,
-            per_page: 20,
-            search: search
-        });
-        
-        const response = await fetch(`${API_BASE}/notas-fiscais?${params}`);
-        const data = await response.json();
-        
-        if (data.success) {
-            renderNotasFiscais(data.data);
-            renderPagination('pagination-notas', data.pagination, buscarNotasFiscais);
-        }
-    } catch (error) {
-        console.error('Erro ao buscar notas fiscais:', error);
-        showToast('Erro ao carregar notas fiscais', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-function renderNotasFiscais(notas) {
-    const tbody = document.getElementById('lista-notas-fiscais');
-    tbody.innerHTML = '';
-    
-    if (notas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhuma nota fiscal encontrada</td></tr>';
-        return;
-    }
-    
-    notas.forEach(nota => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${nota.numero}/${nota.serie}</td>
-            <td>${nota.fornecedor?.razao_social || 'N/A'}</td>
-            <td>${formatDate(nota.data_emissao)}</td>
-            <td>${formatCurrency(nota.valor_total)}</td>
-            <td><span class="status-badge status-${nota.status.toLowerCase()}">${nota.status}</span></td>
-            <td>
-                <div class="action-buttons">
-                    <button class="action-btn view" onclick="visualizarNotaFiscal(${nota.id})" title="Visualizar">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="action-btn delete" onclick="excluirNotaFiscal(${nota.id})" title="Excluir">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-async function handleUploadXML(e) {
-    e.preventDefault();
-    
-    const formData = new FormData();
-    const fileInput = document.getElementById('arquivo-xml');
-    
-    if (!fileInput.files[0]) {
-        showToast('Selecione um arquivo XML', 'error');
-        return;
-    }
-    
-    formData.append('file', fileInput.files[0]);
-    
-    showLoading();
-    try {
-        const response = await fetch(`${API_BASE}/notas-fiscais/upload`, {
-            method: 'POST',
-            body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showToast(data.message, 'success');
-            fecharModal('modal-upload-xml');
-            document.getElementById('form-upload-xml').reset();
-            buscarNotasFiscais();
-        } else {
-            showToast(data.error, 'error');
-        }
-    } catch (error) {
-        console.error('Erro ao fazer upload:', error);
-        showToast('Erro ao processar arquivo XML', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
 // Contas a Pagar
 async function buscarContasPagar(page = 1) {
+    console.log('Buscando contas a pagar...');
     showLoading();
     try {
-        const search = document.getElementById('search-contas')?.value || '';
-        const status = document.getElementById('filter-status')?.value || '';
-        const fornecedorId = document.getElementById('filter-fornecedor')?.value || '';
-        const dataInicio = document.getElementById('filter-data-inicio')?.value || '';
-        const dataFim = document.getElementById('filter-data-fim')?.value || '';
+        const search = getElementValue('search-contas') || '';
+        const status = getElementValue('filter-status') || '';
+        const fornecedorId = getElementValue('filter-fornecedor') || '';
+        const dataInicio = getElementValue('filter-data-inicio') || '';
+        const dataFim = getElementValue('filter-data-fim') || '';
         
         const params = new URLSearchParams({
             page: page,
@@ -322,8 +278,14 @@ async function buscarContasPagar(page = 1) {
         const data = await response.json();
         
         if (data.success) {
+            console.log('Contas a pagar carregadas:', data.data.length);
             renderContasPagar(data.data);
-            renderPagination('pagination-contas', data.pagination, buscarContasPagar);
+            if (data.pagination) {
+                renderPagination('pagination-contas', data.pagination, buscarContasPagar);
+            }
+        } else {
+            console.error('Erro na resposta da API:', data.error);
+            showToast(data.error || 'Erro ao carregar contas', 'error');
         }
     } catch (error) {
         console.error('Erro ao buscar contas a pagar:', error);
@@ -335,6 +297,11 @@ async function buscarContasPagar(page = 1) {
 
 function renderContasPagar(contas) {
     const tbody = document.getElementById('lista-contas-pagar');
+    if (!tbody) {
+        console.error('Elemento lista-contas-pagar não encontrado');
+        return;
+    }
+    
     tbody.innerHTML = '';
     
     if (contas.length === 0) {
@@ -355,14 +322,14 @@ function renderContasPagar(contas) {
                 <div class="action-buttons">
                     ${conta.status === 'PENDENTE' ? `
                         <button class="action-btn pay" onclick="pagarConta(${conta.id})" title="Pagar">
-                            <i class="fas fa-dollar-sign"></i>
+                            💰
                         </button>
                     ` : ''}
                     <button class="action-btn edit" onclick="editarContaPagar(${conta.id})" title="Editar">
-                        <i class="fas fa-edit"></i>
+                        ✏️
                     </button>
                     <button class="action-btn delete" onclick="excluirContaPagar(${conta.id})" title="Excluir">
-                        <i class="fas fa-trash"></i>
+                        🗑️
                     </button>
                 </div>
             </td>
@@ -371,45 +338,9 @@ function renderContasPagar(contas) {
     });
 }
 
-async function handleSalvarContaPagar(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
-    
-    showLoading();
-    try {
-        const response = await fetch(`${API_BASE}/contas-pagar`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showToast(result.message, 'success');
-            fecharModal('modal-conta-pagar');
-            document.getElementById('form-conta-pagar').reset();
-            buscarContasPagar();
-            atualizarDashboard();
-        } else {
-            showToast(result.error, 'error');
-        }
-    } catch (error) {
-        console.error('Erro ao salvar conta:', error);
-        showToast('Erro ao salvar conta a pagar', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
+// Ações das Contas a Pagar
 async function pagarConta(contaId) {
     if (!confirm('Confirma o pagamento desta conta?')) return;
-    
-    const dataAtual = new Date().toISOString().split('T')[0];
     
     showLoading();
     try {
@@ -419,22 +350,201 @@ async function pagarConta(contaId) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                data_pagamento: dataAtual
+                data_pagamento: new Date().toISOString().split('T')[0]
             })
         });
         
-        const data = await response.json();
+        const result = await response.json();
         
-        if (data.success) {
-            showToast(data.message, 'success');
+        if (result.success) {
+            showToast('Conta paga com sucesso!', 'success');
             buscarContasPagar();
             atualizarDashboard();
         } else {
-            showToast(data.error, 'error');
+            showToast(result.error || 'Erro ao pagar conta', 'error');
         }
     } catch (error) {
         console.error('Erro ao pagar conta:', error);
-        showToast('Erro ao processar pagamento', 'error');
+        showToast('Erro ao pagar conta', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function editarContaPagar(id) {
+    try {
+        const response = await fetch(`${API_BASE}/contas-pagar/${id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const conta = data.data;
+            
+            // Preencher formulário
+            setElementValue('conta-fornecedor', conta.fornecedor_id);
+            setElementValue('conta-tipo-despesa', conta.tipo_despesa_id);
+            setElementValue('conta-descricao', conta.descricao);
+            setElementValue('conta-valor', conta.valor_original);
+            setElementValue('conta-vencimento', conta.data_vencimento);
+            setElementValue('conta-documento', conta.numero_documento);
+            setElementValue('conta-observacoes', conta.observacoes);
+            
+            // Definir ID para edição
+            document.getElementById('form-conta-pagar').dataset.editId = id;
+            
+            abrirModal('modal-conta-pagar');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar conta:', error);
+        showToast('Erro ao carregar dados da conta', 'error');
+    }
+}
+
+async function excluirContaPagar(id) {
+    if (!confirm('Tem certeza que deseja excluir esta conta?')) return;
+    
+    showLoading();
+    try {
+        const response = await fetch(`${API_BASE}/contas-pagar/${id}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Conta excluída com sucesso!', 'success');
+            buscarContasPagar();
+            atualizarDashboard();
+        } else {
+            showToast(result.error || 'Erro ao excluir conta', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao excluir conta:', error);
+        showToast('Erro ao excluir conta', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Notas Fiscais
+async function buscarNotasFiscais(page = 1) {
+    console.log('Buscando notas fiscais...');
+    showLoading();
+    try {
+        const search = getElementValue('search-notas') || '';
+        
+        const params = new URLSearchParams({
+            page: page,
+            per_page: 20,
+            search: search
+        });
+        
+        const response = await fetch(`${API_BASE}/notas-fiscais?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('Notas fiscais carregadas:', data.data.length);
+            renderNotasFiscais(data.data);
+            if (data.pagination) {
+                renderPagination('pagination-notas', data.pagination, buscarNotasFiscais);
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao buscar notas fiscais:', error);
+        showToast('Erro ao carregar notas fiscais', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+function renderNotasFiscais(notas) {
+    const tbody = document.getElementById('lista-notas-fiscais');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (notas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhuma nota fiscal encontrada</td></tr>';
+        return;
+    }
+    
+    notas.forEach(nota => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${nota.numero}/${nota.serie}</td>
+            <td>${nota.fornecedor?.razao_social || 'N/A'}</td>
+            <td>${formatDate(nota.data_emissao)}</td>
+            <td>${formatCurrency(nota.valor_total)}</td>
+            <td><span class="status-badge status-${nota.status.toLowerCase()}">${nota.status}</span></td>
+            <td>
+                <div class="action-buttons">
+                    <button class="action-btn view" onclick="visualizarNota(${nota.id})" title="Visualizar">
+                        👁️
+                    </button>
+                    <button class="action-btn delete" onclick="excluirNota(${nota.id})" title="Excluir">
+                        🗑️
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+async function visualizarNota(id) {
+    try {
+        const response = await fetch(`${API_BASE}/notas-fiscais/${id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const nota = data.data;
+            
+            // Mostrar detalhes da nota em modal
+            const modalContent = `
+                <h3>Nota Fiscal ${nota.numero}/${nota.serie}</h3>
+                <p><strong>Fornecedor:</strong> ${nota.fornecedor?.razao_social}</p>
+                <p><strong>Data Emissão:</strong> ${formatDate(nota.data_emissao)}</p>
+                <p><strong>Valor Total:</strong> ${formatCurrency(nota.valor_total)}</p>
+                <p><strong>Chave de Acesso:</strong> ${nota.chave_acesso}</p>
+                <h4>Itens (${nota.itens?.length || 0}):</h4>
+                <div style="max-height: 300px; overflow-y: auto;">
+                    ${(nota.itens || []).map(item => `
+                        <div style="border-bottom: 1px solid #eee; padding: 10px;">
+                            <strong>${item.descricao}</strong><br>
+                            Qtd: ${item.quantidade} ${item.unidade} - 
+                            Valor: ${formatCurrency(item.valor_total)}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            showModal('Detalhes da Nota Fiscal', modalContent);
+        }
+    } catch (error) {
+        console.error('Erro ao visualizar nota:', error);
+        showToast('Erro ao carregar detalhes da nota', 'error');
+    }
+}
+
+async function excluirNota(id) {
+    if (!confirm('Tem certeza que deseja excluir esta nota fiscal?')) return;
+    
+    showLoading();
+    try {
+        const response = await fetch(`${API_BASE}/notas-fiscais/${id}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Nota fiscal excluída com sucesso!', 'success');
+            buscarNotasFiscais();
+        } else {
+            showToast(result.error || 'Erro ao excluir nota', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao excluir nota:', error);
+        showToast('Erro ao excluir nota', 'error');
     } finally {
         hideLoading();
     }
@@ -442,9 +552,11 @@ async function pagarConta(contaId) {
 
 // Fornecedores
 async function buscarFornecedores(page = 1) {
+    console.log('Buscando fornecedores...');
     showLoading();
     try {
-        const search = document.getElementById('search-fornecedores')?.value || '';
+        const search = getElementValue('search-fornecedores') || '';
+        
         const params = new URLSearchParams({
             page: page,
             per_page: 20,
@@ -455,8 +567,11 @@ async function buscarFornecedores(page = 1) {
         const data = await response.json();
         
         if (data.success) {
+            console.log('Fornecedores carregados:', data.data.length);
             renderFornecedores(data.data);
-            renderPagination('pagination-fornecedores', data.pagination, buscarFornecedores);
+            if (data.pagination) {
+                renderPagination('pagination-fornecedores', data.pagination, buscarFornecedores);
+            }
         }
     } catch (error) {
         console.error('Erro ao buscar fornecedores:', error);
@@ -468,6 +583,8 @@ async function buscarFornecedores(page = 1) {
 
 function renderFornecedores(fornecedores) {
     const tbody = document.getElementById('lista-fornecedores');
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
     
     if (fornecedores.length === 0) {
@@ -481,15 +598,15 @@ function renderFornecedores(fornecedores) {
             <td>${fornecedor.cnpj}</td>
             <td>${fornecedor.razao_social}</td>
             <td>${fornecedor.nome_fantasia || '-'}</td>
-            <td>${fornecedor.cidade || '-'}/${fornecedor.uf || '-'}</td>
+            <td>${fornecedor.cidade}/${fornecedor.uf}</td>
             <td>${fornecedor.telefone || '-'}</td>
             <td>
                 <div class="action-buttons">
                     <button class="action-btn edit" onclick="editarFornecedor(${fornecedor.id})" title="Editar">
-                        <i class="fas fa-edit"></i>
+                        ✏️
                     </button>
                     <button class="action-btn delete" onclick="excluirFornecedor(${fornecedor.id})" title="Excluir">
-                        <i class="fas fa-trash"></i>
+                        🗑️
                     </button>
                 </div>
             </td>
@@ -498,49 +615,72 @@ function renderFornecedores(fornecedores) {
     });
 }
 
-async function handleSalvarFornecedor(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
+async function editarFornecedor(id) {
+    try {
+        const response = await fetch(`${API_BASE}/fornecedores/${id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const fornecedor = data.data;
+            
+            // Preencher formulário
+            setElementValue('fornecedor-cnpj', fornecedor.cnpj);
+            setElementValue('fornecedor-razao-social', fornecedor.razao_social);
+            setElementValue('fornecedor-nome-fantasia', fornecedor.nome_fantasia);
+            setElementValue('fornecedor-endereco', fornecedor.endereco);
+            setElementValue('fornecedor-cidade', fornecedor.cidade);
+            setElementValue('fornecedor-uf', fornecedor.uf);
+            setElementValue('fornecedor-cep', fornecedor.cep);
+            setElementValue('fornecedor-telefone', fornecedor.telefone);
+            setElementValue('fornecedor-email', fornecedor.email);
+            
+            // Definir ID para edição
+            document.getElementById('form-fornecedor').dataset.editId = id;
+            
+            abrirModal('modal-fornecedor');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar fornecedor:', error);
+        showToast('Erro ao carregar dados do fornecedor', 'error');
+    }
+}
+
+async function excluirFornecedor(id) {
+    if (!confirm('Tem certeza que deseja excluir este fornecedor?')) return;
     
     showLoading();
     try {
-        const response = await fetch(`${API_BASE}/fornecedores`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
+        const response = await fetch(`${API_BASE}/fornecedores/${id}`, {
+            method: 'DELETE'
         });
         
         const result = await response.json();
         
         if (result.success) {
-            showToast(result.message, 'success');
-            fecharModal('modal-fornecedor');
-            document.getElementById('form-fornecedor').reset();
+            showToast('Fornecedor excluído com sucesso!', 'success');
             buscarFornecedores();
-            carregarFornecedores(); // Atualizar selects
+            carregarFornecedores(); // Recarregar dropdowns
         } else {
-            showToast(result.error, 'error');
+            showToast(result.error || 'Erro ao excluir fornecedor', 'error');
         }
     } catch (error) {
-        console.error('Erro ao salvar fornecedor:', error);
-        showToast('Erro ao salvar fornecedor', 'error');
+        console.error('Erro ao excluir fornecedor:', error);
+        showToast('Erro ao excluir fornecedor', 'error');
     } finally {
         hideLoading();
     }
 }
 
 // Tipos de Despesa
-async function buscarTiposDespesa() {
+async function buscarTiposDespesa(page = 1) {
+    console.log('Buscando tipos de despesa...');
     showLoading();
     try {
         const response = await fetch(`${API_BASE}/tipos-despesa`);
         const data = await response.json();
         
         if (data.success) {
+            console.log('Tipos de despesa carregados:', data.data.length);
             renderTiposDespesa(data.data);
         }
     } catch (error) {
@@ -553,6 +693,8 @@ async function buscarTiposDespesa() {
 
 function renderTiposDespesa(tipos) {
     const tbody = document.getElementById('lista-tipos-despesa');
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
     
     if (tipos.length === 0) {
@@ -565,14 +707,14 @@ function renderTiposDespesa(tipos) {
         tr.innerHTML = `
             <td>${tipo.nome}</td>
             <td>${tipo.descricao || '-'}</td>
-            <td><span class="status-badge ${tipo.ativo ? 'status-pago' : 'status-cancelado'}">${tipo.ativo ? 'Ativo' : 'Inativo'}</span></td>
+            <td><span class="status-badge ${tipo.ativo ? 'status-ativo' : 'status-inativo'}">${tipo.ativo ? 'Ativo' : 'Inativo'}</span></td>
             <td>
                 <div class="action-buttons">
                     <button class="action-btn edit" onclick="editarTipoDespesa(${tipo.id})" title="Editar">
-                        <i class="fas fa-edit"></i>
+                        ✏️
                     </button>
                     <button class="action-btn delete" onclick="excluirTipoDespesa(${tipo.id})" title="Excluir">
-                        <i class="fas fa-trash"></i>
+                        🗑️
                     </button>
                 </div>
             </td>
@@ -581,17 +723,120 @@ function renderTiposDespesa(tipos) {
     });
 }
 
-async function handleSalvarTipoDespesa(e) {
+async function editarTipoDespesa(id) {
+    try {
+        const response = await fetch(`${API_BASE}/tipos-despesa/${id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const tipo = data.data;
+            
+            // Preencher formulário
+            setElementValue('tipo-nome', tipo.nome);
+            setElementValue('tipo-descricao', tipo.descricao);
+            setElementValue('tipo-ativo', tipo.ativo);
+            
+            // Definir ID para edição
+            document.getElementById('form-tipo-despesa').dataset.editId = id;
+            
+            abrirModal('modal-tipo-despesa');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar tipo de despesa:', error);
+        showToast('Erro ao carregar dados do tipo de despesa', 'error');
+    }
+}
+
+async function excluirTipoDespesa(id) {
+    if (!confirm('Tem certeza que deseja excluir este tipo de despesa?')) return;
+    
+    showLoading();
+    try {
+        const response = await fetch(`${API_BASE}/tipos-despesa/${id}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Tipo de despesa excluído com sucesso!', 'success');
+            buscarTiposDespesa();
+            carregarTiposDespesa(); // Recarregar dropdowns
+        } else {
+            showToast(result.error || 'Erro ao excluir tipo de despesa', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao excluir tipo de despesa:', error);
+        showToast('Erro ao excluir tipo de despesa', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Comprovantes
+async function buscarComprovantes() {
+    console.log('Buscando comprovantes...');
+    const tbody = document.getElementById('lista-comprovantes');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Funcionalidade em desenvolvimento</td></tr>';
+    }
+}
+
+// Extratos Bancários
+async function buscarExtratosBancarios() {
+    console.log('Buscando extratos bancários...');
+    const tbody = document.getElementById('lista-extratos');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Funcionalidade em desenvolvimento</td></tr>';
+    }
+}
+
+// Handlers de Formulários
+async function handleUploadXML(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    
+    showLoading();
+    try {
+        const response = await fetch(`${API_BASE}/notas-fiscais/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(result.message || 'XML processado com sucesso!', 'success');
+            fecharModal('modal-upload-xml');
+            e.target.reset();
+            buscarNotasFiscais();
+            atualizarDashboard();
+        } else {
+            showToast(result.error || 'Erro ao processar XML', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao fazer upload do XML:', error);
+        showToast('Erro ao processar XML', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function handleSalvarContaPagar(e) {
     e.preventDefault();
     
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData.entries());
-    data.ativo = document.getElementById('tipo-ativo').checked;
+    const editId = e.target.dataset.editId;
     
     showLoading();
     try {
-        const response = await fetch(`${API_BASE}/tipos-despesa`, {
-            method: 'POST',
+        const url = editId ? `${API_BASE}/contas-pagar/${editId}` : `${API_BASE}/contas-pagar`;
+        const method = editId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -601,13 +846,94 @@ async function handleSalvarTipoDespesa(e) {
         const result = await response.json();
         
         if (result.success) {
-            showToast(result.message, 'success');
-            fecharModal('modal-tipo-despesa');
-            document.getElementById('form-tipo-despesa').reset();
-            buscarTiposDespesa();
-            carregarTiposDespesa(); // Atualizar selects
+            showToast(result.message || 'Conta salva com sucesso!', 'success');
+            fecharModal('modal-conta-pagar');
+            e.target.reset();
+            delete e.target.dataset.editId;
+            buscarContasPagar();
+            atualizarDashboard();
         } else {
-            showToast(result.error, 'error');
+            showToast(result.error || 'Erro ao salvar conta', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao salvar conta:', error);
+        showToast('Erro ao salvar conta', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function handleSalvarFornecedor(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    const editId = e.target.dataset.editId;
+    
+    showLoading();
+    try {
+        const url = editId ? `${API_BASE}/fornecedores/${editId}` : `${API_BASE}/fornecedores`;
+        const method = editId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(result.message || 'Fornecedor salvo com sucesso!', 'success');
+            fecharModal('modal-fornecedor');
+            e.target.reset();
+            delete e.target.dataset.editId;
+            buscarFornecedores();
+            carregarFornecedores(); // Recarregar dropdowns
+        } else {
+            showToast(result.error || 'Erro ao salvar fornecedor', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao salvar fornecedor:', error);
+        showToast('Erro ao salvar fornecedor', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function handleSalvarTipoDespesa(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    const editId = e.target.dataset.editId;
+    
+    showLoading();
+    try {
+        const url = editId ? `${API_BASE}/tipos-despesa/${editId}` : `${API_BASE}/tipos-despesa`;
+        const method = editId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(result.message || 'Tipo de despesa salvo com sucesso!', 'success');
+            fecharModal('modal-tipo-despesa');
+            e.target.reset();
+            delete e.target.dataset.editId;
+            buscarTiposDespesa();
+            carregarTiposDespesa(); // Recarregar dropdowns
+        } else {
+            showToast(result.error || 'Erro ao salvar tipo de despesa', 'error');
         }
     } catch (error) {
         console.error('Erro ao salvar tipo de despesa:', error);
@@ -617,192 +943,111 @@ async function handleSalvarTipoDespesa(e) {
     }
 }
 
-// Modais
-function abrirModalUploadXML() {
-    document.getElementById('modal-upload-xml').classList.add('active');
+// Funções de Utilidade
+function getElementValue(id) {
+    const element = document.getElementById(id);
+    return element ? element.value : '';
 }
 
-function abrirModalContaPagar() {
-    document.getElementById('modal-conta-pagar').classList.add('active');
+function setElementValue(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.value = value || '';
+    }
 }
 
-function abrirModalFornecedor() {
-    document.getElementById('modal-fornecedor').classList.add('active');
+function updateElement(id, content) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = content;
+    }
 }
 
-function abrirModalTipoDespesa() {
-    document.getElementById('modal-tipo-despesa').classList.add('active');
+function showLoading() {
+    // Implementar loading se necessário
+    console.log('Loading...');
 }
 
-function abrirModalComprovante() {
-    showToast('Funcionalidade em desenvolvimento', 'warning');
+function hideLoading() {
+    // Implementar hide loading se necessário
+    console.log('Loading finished');
 }
 
-function abrirModalUploadOFX() {
-    showToast('Funcionalidade em desenvolvimento', 'warning');
+function showToast(message, type = 'info') {
+    console.log(`Toast ${type}:`, message);
+    alert(message); // Implementação simples
+}
+
+function abrirModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'block';
+        modal.classList.add('show');
+    }
 }
 
 function fecharModal(modalId) {
-    document.getElementById(modalId).classList.remove('active');
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+    }
 }
 
-// Fechar modal clicando fora
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('modal')) {
-        e.target.classList.remove('active');
-    }
-});
-
-// Paginação
-function renderPagination(containerId, pagination, callback) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    if (pagination.pages <= 1) return;
-    
-    // Botão anterior
-    const prevBtn = document.createElement('button');
-    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
-    prevBtn.disabled = !pagination.has_prev;
-    prevBtn.onclick = () => callback(pagination.page - 1);
-    container.appendChild(prevBtn);
-    
-    // Páginas
-    const startPage = Math.max(1, pagination.page - 2);
-    const endPage = Math.min(pagination.pages, pagination.page + 2);
-    
-    for (let i = startPage; i <= endPage; i++) {
-        const pageBtn = document.createElement('button');
-        pageBtn.textContent = i;
-        pageBtn.classList.toggle('active', i === pagination.page);
-        pageBtn.onclick = () => callback(i);
-        container.appendChild(pageBtn);
-    }
-    
-    // Botão próximo
-    const nextBtn = document.createElement('button');
-    nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
-    nextBtn.disabled = !pagination.has_next;
-    nextBtn.onclick = () => callback(pagination.page + 1);
-    container.appendChild(nextBtn);
+function showModal(title, content) {
+    alert(`${title}\n\n${content}`); // Implementação simples
 }
 
-// Utilitários
 function formatCurrency(value) {
+    if (!value) return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL'
-    }).format(value || 0);
+    }).format(value);
 }
 
 function formatDate(dateString) {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR');
 }
 
-function formatCNPJ(value) {
-    value = value.replace(/\D/g, '');
-    value = value.replace(/^(\d{2})(\d)/, '$1.$2');
-    value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
-    value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
-    value = value.replace(/(\d{4})(\d)/, '$1-$2');
-    return value;
-}
-
-function formatCEP(value) {
-    value = value.replace(/\D/g, '');
-    value = value.replace(/^(\d{5})(\d)/, '$1-$2');
-    return value;
-}
-
-// Loading
-function showLoading() {
-    document.getElementById('loading-overlay').classList.add('active');
-}
-
-function hideLoading() {
-    document.getElementById('loading-overlay').classList.remove('active');
-}
-
-// Toast Notifications
-function showToast(message, type = 'info', title = '') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    
-    const icons = {
-        success: 'fas fa-check-circle',
-        error: 'fas fa-exclamation-circle',
-        warning: 'fas fa-exclamation-triangle',
-        info: 'fas fa-info-circle'
-    };
-    
-    const titles = {
-        success: 'Sucesso',
-        error: 'Erro',
-        warning: 'Atenção',
-        info: 'Informação'
-    };
-    
-    toast.innerHTML = `
-        <i class="toast-icon ${icons[type]}"></i>
-        <div class="toast-content">
-            <div class="toast-title">${title || titles[type]}</div>
-            <div class="toast-message">${message}</div>
-        </div>
-        <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
-    `;
-    
-    container.appendChild(toast);
-    
-    // Auto remove após 5 segundos
-    setTimeout(() => {
-        if (toast.parentElement) {
-            toast.remove();
+function renderPagination(containerId, pagination, callback) {
+    // Implementação simples de paginação
+    const container = document.getElementById(containerId);
+    if (container && pagination.pages > 1) {
+        let html = '';
+        for (let i = 1; i <= pagination.pages; i++) {
+            html += `<button onclick="${callback.name}(${i})" ${i === pagination.page ? 'class="active"' : ''}>${i}</button>`;
         }
-    }, 5000);
-}
-
-// Funções de ação (placeholders para funcionalidades futuras)
-function visualizarNotaFiscal(id) {
-    showToast('Funcionalidade em desenvolvimento', 'warning');
-}
-
-function excluirNotaFiscal(id) {
-    if (confirm('Confirma a exclusão desta nota fiscal?')) {
-        showToast('Funcionalidade em desenvolvimento', 'warning');
+        container.innerHTML = html;
     }
 }
 
-function editarContaPagar(id) {
-    showToast('Funcionalidade em desenvolvimento', 'warning');
-}
-
-function excluirContaPagar(id) {
-    if (confirm('Confirma a exclusão desta conta a pagar?')) {
-        showToast('Funcionalidade em desenvolvimento', 'warning');
+function aplicarFiltros() {
+    if (currentSection === 'contas-pagar') {
+        buscarContasPagar();
+    } else if (currentSection === 'notas-fiscais') {
+        buscarNotasFiscais();
+    } else if (currentSection === 'fornecedores') {
+        buscarFornecedores();
     }
 }
 
-function editarFornecedor(id) {
-    showToast('Funcionalidade em desenvolvimento', 'warning');
-}
+// Expor funções globalmente para onclick
+window.pagarConta = pagarConta;
+window.editarContaPagar = editarContaPagar;
+window.excluirContaPagar = excluirContaPagar;
+window.visualizarNota = visualizarNota;
+window.excluirNota = excluirNota;
+window.editarFornecedor = editarFornecedor;
+window.excluirFornecedor = excluirFornecedor;
+window.editarTipoDespesa = editarTipoDespesa;
+window.excluirTipoDespesa = excluirTipoDespesa;
+window.buscarContasPagar = buscarContasPagar;
+window.buscarNotasFiscais = buscarNotasFiscais;
+window.buscarFornecedores = buscarFornecedores;
+window.aplicarFiltros = aplicarFiltros;
 
-function excluirFornecedor(id) {
-    if (confirm('Confirma a exclusão deste fornecedor?')) {
-        showToast('Funcionalidade em desenvolvimento', 'warning');
-    }
-}
-
-function editarTipoDespesa(id) {
-    showToast('Funcionalidade em desenvolvimento', 'warning');
-}
-
-function excluirTipoDespesa(id) {
-    if (confirm('Confirma a exclusão deste tipo de despesa?')) {
-        showToast('Funcionalidade em desenvolvimento', 'warning');
-    }
-}
+console.log('Script carregado com sucesso!');
 
