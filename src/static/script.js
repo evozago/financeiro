@@ -1051,3 +1051,60 @@ window.aplicarFiltros = aplicarFiltros;
 
 console.log('Script carregado com sucesso!');
 
+
+
+// Funções para abrir modais específicos
+function abrirModalUploadXML() {
+    abrirModal('modal-upload-xml');
+}
+
+function abrirModalContaPagar() {
+    // Limpar formulário para nova conta
+    const form = document.getElementById('form-conta-pagar');
+    if (form) {
+        form.reset();
+        delete form.dataset.editId;
+    }
+    abrirModal('modal-conta-pagar');
+}
+
+function abrirModalFornecedor() {
+    // Limpar formulário para novo fornecedor
+    const form = document.getElementById('form-fornecedor');
+    if (form) {
+        form.reset();
+        delete form.dataset.editId;
+    }
+    abrirModal('modal-fornecedor');
+}
+
+function abrirModalTipoDespesa() {
+    // Limpar formulário para novo tipo
+    const form = document.getElementById('form-tipo-despesa');
+    if (form) {
+        form.reset();
+        delete form.dataset.editId;
+    }
+    abrirModal('modal-tipo-despesa');
+}
+
+function abrirModalComprovante() {
+    // Funcionalidade em desenvolvimento
+    showToast('Funcionalidade de comprovantes em desenvolvimento', 'info');
+}
+
+function abrirModalUploadOFX() {
+    // Funcionalidade em desenvolvimento
+    showToast('Funcionalidade de importação OFX em desenvolvimento', 'info');
+}
+
+// Expor funções globalmente
+window.abrirModalUploadXML = abrirModalUploadXML;
+window.abrirModalContaPagar = abrirModalContaPagar;
+window.abrirModalFornecedor = abrirModalFornecedor;
+window.abrirModalTipoDespesa = abrirModalTipoDespesa;
+window.abrirModalComprovante = abrirModalComprovante;
+window.abrirModalUploadOFX = abrirModalUploadOFX;
+
+console.log('Funções de modal adicionadas com sucesso!');
+
